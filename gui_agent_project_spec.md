@@ -12,7 +12,7 @@ The agent observes the user's desktop screen, tags interactive zones/grid coordi
 - Type Hinting & Validation: Strict typing with Pydantic v2
 - Image & Screen Capture: `mss` (high-performance in-memory screen capturing) + `OpenCV` (cv2) / `Pillow` (PIL)
 - OS Automation: `pynput` (mouse and keyboard, Unicode typing) with abstract base controller architecture
-- Safety: Asynchronous global emergency kill-switch (e.g. Esc key or mouse panic corner)
+- Safety: Global emergency switch (Ctrl+Alt+Q pauses; while paused Ctrl+Alt+R resumes and Ctrl+Alt+Q aborts)
 - Modularity: Separation of Concerns (Vision, Controller, Agent/FSM, Schemas, Telemetry)
 
 ---
@@ -99,14 +99,14 @@ Define strict Pydantic models for all agent outputs:
 ### 6. `controller/safety.py`
 - Class `EmergencyKillSwitch`:
   - Runs a lightweight background daemon thread (`pynput.keyboard`).
-  - Monitors for a physical abort sequence (e.g. `Esc` long-press or `Ctrl+Alt+Q`).
+  - Monitors the pause / resume hotkeys (`Ctrl+Alt+Q`, `Ctrl+Alt+R`); a second `Ctrl+Alt+Q` while paused aborts.
   - Implements an atomic `is_aborted()` check that immediately stops the FSM loop and raises `InterruptedError`.
 
 ### 7. `agent/planner.py` & `agent/prompts.py`
 - `prompts.py`: Defines the system instructions, guiding the VLM to observe the tagged image and return exclusively valid JSON adhering to the `AgentAction` schema.
 - `planner.py`:
   - Accepts the user goal, execution history, and current annotated screenshot.
-  - Calls the VLM endpoint (OpenAI GPT-4o / Anthropic Claude / local VLM) using structured outputs / JSON mode.
+  - Calls Claude (default `claude-haiku-5-5`, configurable) through the Anthropic SDK with structured outputs, then refines each click on an enlarged region with a finer grid.
   - Validates and parses the response into an `AgentAction` instance.
 
 ### 8. `agent/state_machine.py`

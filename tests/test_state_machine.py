@@ -181,7 +181,15 @@ def run(parts, actions, cells=(), goal="Guardá el archivo", **kwargs):
 
 
 @pytest.mark.parametrize(
-    "kwargs", [{"max_steps": 0}, {"stuck_limit": 0}, {"max_wait": -1}, {"zoom_grid": 1}]
+    "kwargs",
+    [
+        {"max_steps": 0},
+        {"stuck_limit": 0},
+        {"max_wait": -1},
+        {"zoom_grid": 1},
+        {"zoom_margin": 0},
+        {"zoom_margin": 3},
+    ],
 )
 def test_invalid_settings_raise(parts, kwargs):
     with pytest.raises(ValueError):
@@ -265,24 +273,36 @@ def test_waits_do_not_count_as_stuck(parts):
 # --------------------------------------------------------- clicks and zoom
 
 
-def test_click_zooms_on_the_cell_and_its_neighbours(parts):
+def test_click_zooms_on_the_cell_and_half_its_neighbours(parts):
     result, planner = run(
         parts, [act(ActionType.CLICK, target_id=24), FINISH], cells=[19]
     )
 
-    # Cell 24 is 96x90 screen px; one cell around it, clipped at the top edge.
-    assert parts["screen"].regions == [(288, 0, 288, 270)]
+    # Cell 24 is 96x90 screen px; half a cell around it -> 192x180 px.
+    assert parts["screen"].regions == [(336, 45, 192, 180)]
     (refine,) = planner.refine_calls
     assert (refine["tagged"].grid_cols, refine["tagged"].grid_rows) == (8, 8)
     assert refine["drag_end"] is False
-    assert parts["controller"].calls == [("click", 414, 84, "left")]
-    assert scenes.inside_save_button(414, 84)
+    assert parts["controller"].calls == [("click", 420, 101, "left")]
+    assert scenes.inside_save_button(420, 101)
 
 
 def test_zoom_region_is_clipped_at_the_screen_corner(parts):
     run(parts, [act(ActionType.CLICK, target_id=0), FINISH], cells=[0])
 
-    assert parts["screen"].regions == [(0, 0, 192, 180)]
+    assert parts["screen"].regions == [(0, 0, 144, 135)]
+
+
+def test_zoom_margin_of_one_cell(parts):
+    run(
+        parts,
+        [act(ActionType.CLICK, target_id=24), FINISH],
+        cells=[19],
+        zoom_margin=1.0,
+    )
+
+    assert parts["screen"].regions == [(288, 0, 288, 270)]
+    assert parts["controller"].calls == [("click", 414, 84, "left")]
 
 
 def test_zoom_grid_is_configurable(parts):
@@ -308,8 +328,8 @@ def test_double_and_right_click(parts):
     run(parts, actions, cells=[19, 19])
 
     assert parts["controller"].calls == [
-        ("double_click", 414, 84),
-        ("click", 414, 84, "right"),
+        ("double_click", 420, 101),
+        ("click", 420, 101, "right"),
     ]
 
 
@@ -320,7 +340,7 @@ def test_scroll_zooms_then_scrolls(parts):
         cells=[19],
     )
 
-    assert parts["controller"].calls == [("scroll", 414, 84, 3)]
+    assert parts["controller"].calls == [("scroll", 420, 101, 3)]
 
 
 def test_drag_refines_both_ends(parts):
@@ -329,7 +349,7 @@ def test_drag_refines_both_ends(parts):
 
     assert [c["drag_end"] for c in planner.refine_calls] == [False, True]
     (call,) = parts["controller"].calls
-    assert call[0] == "drag" and call[1:3] == (414, 84) and call[5] == 0.8
+    assert call[0] == "drag" and call[1:3] == (420, 101) and call[5] == 0.8
     assert call[3] > call[1]  # cell 20 is right of cell 19
 
 
@@ -468,7 +488,7 @@ def test_on_step_reports_each_executed_step(parts):
 
     assert [e.number for e in events] == [1, 2]
     assert all(isinstance(e, StepEvent) for e in events)
-    assert events[0].point == (414, 84)
+    assert events[0].point == (420, 101)
     assert events[0].screen_changed is True
     assert events[1].point is None
     # Haiku: 1000 in + 200 out = US$ 0.0002 per call; 3 calls before step 2 ends.
@@ -513,7 +533,7 @@ def test_recorder_writes_one_folder_per_run(parts, tmp_path):
     lines = (run_dir / "steps.jsonl").read_text(encoding="utf-8").splitlines()
     first = json.loads(lines[0])
     assert first["action"]["action_type"] == "CLICK"
-    assert first["point"] == [414, 84]
+    assert first["point"] == [420, 101]
     summary = json.loads((run_dir / "summary.json").read_text(encoding="utf-8"))
     assert summary["status"] == "finished"
     assert summary["goal"] == "Guardá el archivo"

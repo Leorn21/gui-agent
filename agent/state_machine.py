@@ -37,6 +37,7 @@ DEFAULT_MAX_STEPS = 10
 DEFAULT_STUCK_LIMIT = 3
 DEFAULT_MAX_WAIT = 10.0
 DEFAULT_ZOOM_GRID = 8
+DEFAULT_ZOOM_MARGIN = 0.5  # cells captured around the chosen one, per side
 WAIT_SLICE = 0.1  # seconds between safety checks while waiting
 
 # USD per million tokens: (input, output). Cache writes cost 1.25x input,
@@ -142,6 +143,7 @@ class AgentStateMachine:
         stuck_limit: int = DEFAULT_STUCK_LIMIT,
         max_wait: float = DEFAULT_MAX_WAIT,
         zoom_grid: int = DEFAULT_ZOOM_GRID,
+        zoom_margin: float = DEFAULT_ZOOM_MARGIN,
         on_step: Callable[[StepEvent], None] | None = None,
         sleep: Callable[[float], None] = time.sleep,
     ) -> None:
@@ -160,6 +162,8 @@ class AgentStateMachine:
                 excluded) before stopping.
             max_wait: Cap in seconds for a WAIT action.
             zoom_grid: Columns and rows of the zoom grid.
+            zoom_margin: Cells of context around the chosen cell on each
+                side of the zoom, in ``(0, 2]``. 0.5 captures 2x2 cells.
             on_step: Called after every executed step.
             sleep: Injection point for tests.
 
@@ -175,6 +179,8 @@ class AgentStateMachine:
             raise ValueError(f"max_wait must not be negative, got {max_wait}")
         if zoom_grid < 2:
             raise ValueError(f"zoom_grid must be at least 2, got {zoom_grid}")
+        if not 0 < zoom_margin <= 2:
+            raise ValueError(f"zoom_margin must be in (0, 2], got {zoom_margin}")
 
         self._planner = planner
         self._controller = controller
@@ -187,6 +193,7 @@ class AgentStateMachine:
         self._stuck_limit = stuck_limit
         self._max_wait = max_wait
         self._zoom_grid = zoom_grid
+        self._zoom_margin = zoom_margin
         self._on_step = on_step
         self._sleep = sleep
 
@@ -320,14 +327,15 @@ class AgentStateMachine:
         return zoom_tagged.cell_to_screen(fine)
 
     def _zoom_region(self, tagged: TaggedFrame, cell: int) -> Frame:
-        """Capture the cell and one cell around it at full resolution."""
+        """Capture the cell plus ``zoom_margin`` cells around it at full resolution."""
 
         frame = tagged.frame
         width, height = frame.size
         x0, y0, x1, y1 = tagged.cell_bounds(cell)
         cell_w, cell_h = x1 - x0, y1 - y0
-        ix0, iy0 = max(0, x0 - cell_w), max(0, y0 - cell_h)
-        ix1, iy1 = min(width, x1 + cell_w), min(height, y1 + cell_h)
+        pad_x, pad_y = cell_w * self._zoom_margin, cell_h * self._zoom_margin
+        ix0, iy0 = max(0, x0 - pad_x), max(0, y0 - pad_y)
+        ix1, iy1 = min(width, x1 + pad_x), min(height, y1 + pad_y)
 
         # Image pixels -> pixels relative to the monitor (capture_region's space).
         left = _round_half_up(ix0 / frame.scale)
@@ -398,6 +406,7 @@ __all__ = [
     "DEFAULT_MAX_WAIT",
     "DEFAULT_STUCK_LIMIT",
     "DEFAULT_ZOOM_GRID",
+    "DEFAULT_ZOOM_MARGIN",
     "PRICES",
     "AgentStateMachine",
     "RunResult",

@@ -8,6 +8,7 @@ version = "0.1.0"
 description = "Modular GUI agent scaffold"
 requires-python = ">=3.14"
 dependencies = [
+    "anthropic>=1.15",
     "pydantic>=2.0,<3.0",
     "numpy>=1.26",
     "mss>=10.0",

@@ -78,6 +78,11 @@ class AgentAction(BaseModel):
         default=None,
         description="End coordinate for drag action",
     )
+    drag_end_target_id: int | None = Field(
+        default=None,
+        ge=0,
+        description="Set-of-Mark grid cell where a drag ends",
+    )
     text: str | None = Field(default=None, description="Text payload to type")
     key: str | None = Field(
         default=None,
@@ -126,9 +131,16 @@ class AgentAction(BaseModel):
                 raise ValueError("PRESS_KEY requires non-empty key")
 
         if self.action_type is ActionType.DRAG:
-            if self.coordinate is None or self.drag_end_coordinate is None:
+            by_cells = (
+                self.target_id is not None and self.drag_end_target_id is not None
+            )
+            by_pixels = (
+                self.coordinate is not None and self.drag_end_coordinate is not None
+            )
+            if not (by_cells or by_pixels):
                 raise ValueError(
-                    "DRAG requires both coordinate and drag_end_coordinate"
+                    "DRAG requires target_id and drag_end_target_id, "
+                    "or coordinate and drag_end_coordinate"
                 )
 
         if self.action_type in (ActionType.FINISH, ActionType.FAIL):

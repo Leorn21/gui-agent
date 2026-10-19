@@ -65,9 +65,7 @@ class Frame:
 
         width, height = self.size
         if not (0 <= x < width and 0 <= y < height):
-            raise ValueError(
-                f"Point ({x}, {y}) is outside the {width}x{height} frame"
-            )
+            raise ValueError(f"Point ({x}, {y}) is outside the {width}x{height} frame")
         return (
             self.origin[0] + math.floor(x / self.scale + 0.5),
             self.origin[1] + math.floor(y / self.scale + 0.5),
@@ -122,7 +120,8 @@ class ScreenCapture:
             monitor = monitors[monitor_index - 1]
         else:
             raise ValueError(
-                f"monitor_index must be between 1 and {len(monitors)}, got {monitor_index}"
+                f"monitor_index must be between 1 and {len(monitors)}, "
+                f"got {monitor_index}"
             )
 
         return {key: monitor[key] for key in ("left", "top", "width", "height")}

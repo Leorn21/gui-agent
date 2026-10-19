@@ -3,7 +3,7 @@
 Tells whether an action changed the screen and where. Two frames of the same
 area are compared pixel by pixel; nearby changed pixels are merged into
 regions (so typed letters count as one change) and regions with fewer changed
-pixels than a minimum area are dropped (so a blinking caret does not count).
+pixels than a minimum are dropped (so a blinking caret does not count).
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ import numpy as np
 from vision.capture import Frame
 
 PIXEL_THRESHOLD = 10  # a pixel changed if some channel moved by more than this
-DEFAULT_MIN_AREA = 0.0005  # share of the image a region must change (0.05%)
+DEFAULT_MIN_PIXELS = 50  # changed pixels a region needs (a caret ~34, a letter ~80)
 MERGE_RADIUS = 4  # px; changes closer than ~2x this merge into one region
 DEFAULT_TIMEOUT = 2.0
 DEFAULT_INTERVAL = 0.1
@@ -40,7 +40,7 @@ class DiffResult:
     """Outcome of comparing two frames.
 
     Attributes:
-        changed: Whether any region passed the minimum area.
+        changed: Whether any region reached the minimum of changed pixels.
         changed_ratio: Share of the image's pixels that changed in those regions.
         regions: Changed regions in screen pixels, most changed pixels first.
         bounds: Rectangle enclosing all regions, or ``None`` when unchanged.
@@ -62,19 +62,20 @@ def _round_half_up(value: float) -> int:
 class FrameDiff:
     """Compares frames and waits for the screen to change."""
 
-    def __init__(self, min_area: float = DEFAULT_MIN_AREA) -> None:
+    def __init__(self, min_pixels: int = DEFAULT_MIN_PIXELS) -> None:
         """
         Args:
-            min_area: Minimum share of the image, in ``[0, 1)``, a region must
-                change to count.
+            min_pixels: Changed pixels (in image pixels) a region needs to
+                count. An absolute count, so it behaves the same on a full
+                screen and on a small region.
 
         Raises:
-            ValueError: If ``min_area`` is out of range.
+            ValueError: If ``min_pixels`` is negative.
         """
 
-        if not 0 <= min_area < 1:
-            raise ValueError(f"min_area must be in [0, 1), got {min_area}")
-        self.min_area = min_area
+        if min_pixels < 0:
+            raise ValueError(f"min_pixels must not be negative, got {min_pixels}")
+        self.min_pixels = min_pixels
 
     def compare(self, before: Frame, after: Frame) -> DiffResult:
         """Compare two frames of the same screen area.
@@ -104,10 +105,9 @@ class FrameDiff:
         pixels = np.bincount(changed_labels.ravel(), minlength=count)
 
         total = mask.size
-        min_pixels = self.min_area * total
         kept = []  # (changed pixels, image bbox x0, y0, x1, y1)
         for label in range(1, count):
-            if pixels[label] < min_pixels:
+            if pixels[label] < self.min_pixels:
                 continue
             bx, by, bw, bh = stats[label, :4]
             ys, xs = np.nonzero(changed_labels[by : by + bh, bx : bx + bw] == label)
@@ -215,7 +215,7 @@ class FrameDiff:
 
 __all__ = [
     "DEFAULT_INTERVAL",
-    "DEFAULT_MIN_AREA",
+    "DEFAULT_MIN_PIXELS",
     "DEFAULT_TIMEOUT",
     "PIXEL_THRESHOLD",
     "DiffResult",

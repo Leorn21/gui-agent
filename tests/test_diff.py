@@ -1,18 +1,20 @@
 """Tests for vision/diff.py.
 
-Frames are synthetic 400x300 gray images (min area 0.05% = 60 px), changed
-by painting rectangles. wait_for_change() gets a scripted capture function
-and a fake clock that advances when it sleeps.
+Frames are synthetic 400x300 gray images, changed by painting rectangles or
+drawing text. A region needs at least 50 changed pixels by default.
+wait_for_change() gets a scripted capture function and a fake clock that
+advances when it sleeps.
 """
 
 import dataclasses
 
+import cv2
 import numpy as np
 import pytest
 
 from vision.capture import Frame
 from vision.diff import (
-    DEFAULT_MIN_AREA,
+    DEFAULT_MIN_PIXELS,
     PIXEL_THRESHOLD,
     DiffResult,
     FrameDiff,
@@ -42,13 +44,12 @@ WINDOW = (50, 40, 100, 80, 255)  # a 100x80 "window" appears: 8000 px
 
 def test_defaults():
     assert PIXEL_THRESHOLD == 10
-    assert DEFAULT_MIN_AREA == pytest.approx(0.0005)
+    assert DEFAULT_MIN_PIXELS == 50
 
 
-@pytest.mark.parametrize("min_area", [-0.01, 1.0, 2.0])
-def test_invalid_min_area_raises(min_area):
+def test_negative_min_pixels_raises():
     with pytest.raises(ValueError):
-        FrameDiff(min_area=min_area)
+        FrameDiff(min_pixels=-1)
 
 
 # -------------------------------------------------------------------- compare
@@ -88,20 +89,42 @@ def test_pixel_threshold(value, counts):
 
 
 def test_blinking_text_cursor_is_ignored():
-    # A 2x18 px caret appearing is below the minimum area.
+    # A 2x18 px caret (36 px) is below the minimum.
     result = FrameDiff().compare(frame(), frame([(200, 100, 2, 18, 0)]))
 
     assert result.changed is False
 
 
 def test_typed_letters_merge_into_one_region():
-    # Four 5x8 "letters" 3 px apart: each is below the minimum area alone
-    # (40 < 60 px), but together they are one change.
+    # Four 5x8 "letters" 3 px apart: each is below the minimum alone
+    # (40 < 50 px), but together they are one change.
     letters = [(100 + i * 8, 150, 5, 8, 0) for i in range(4)]
     result = FrameDiff().compare(frame(), frame(letters))
 
     assert result.changed is True
     assert result.regions == (Region(x=100, y=150, width=29, height=8),)
+
+
+def test_a_short_word_drawn_with_a_real_font_counts():
+    # Regression: real glyphs are thin strokes, far fewer pixels than solid
+    # blocks. A short word must still be detected on a full 1280x720 frame
+    # (a 0.05% minimum, 461 px, missed it).
+    full = (1280, 720)
+    after = frame(size=full)
+    cv2.putText(
+        after.image,
+        "ok",
+        (60, 150),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.6,
+        (20, 20, 20),
+        1,
+        cv2.LINE_AA,
+    )
+    result = FrameDiff().compare(frame(size=full), after)
+
+    assert result.changed is True
+    assert len(result.regions) == 1
 
 
 def test_separate_changes_are_listed_largest_first_with_enclosing_bounds():
@@ -124,8 +147,8 @@ def test_regions_are_in_screen_coordinates():
     assert result.regions == (Region(x=200, y=130, width=200, height=160),)
 
 
-def test_min_area_is_configurable():
-    result = FrameDiff(min_area=0.1).compare(frame(), frame([WINDOW]))  # 6.7%
+def test_min_pixels_is_configurable():
+    result = FrameDiff(min_pixels=10_000).compare(frame(), frame([WINDOW]))  # 8000
 
     assert result.changed is False
 

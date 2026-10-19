@@ -39,7 +39,7 @@ def _virtual_desktop() -> np.ndarray:
 class FakeMSS:
     """Minimal stand-in for ``mss.MSS``."""
 
-    instances: list["FakeMSS"] = []
+    instances: list[FakeMSS] = []
 
     def __init__(self) -> None:
         self.monitors = [ALL_MONITORS, SECONDARY, PRIMARY]

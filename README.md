@@ -17,7 +17,17 @@ Create and activate the virtual environment before installing dependencies or ru
 ```powershell
 python -m venv .venv
 .venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+pip install -e ".[dev]"
+python -m pytest
+```
+
+Dependencies live in `pyproject.toml` (`dev` extra: pytest and ruff). Tests that touch the real screen, input devices or external APIs are marked `integration` and skipped by default; run them with `python -m pytest -m integration`.
+
+Before pushing, run the same checks as CI:
+
+```powershell
+ruff check .
+ruff format --check .
 python -m pytest
 ```
 

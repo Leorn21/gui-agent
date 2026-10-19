@@ -25,7 +25,6 @@ gui-agent-core/
 ├── .gitignore
 ├── .env.example
 ├── pyproject.toml
-├── requirements.txt
 ├── README.md
 │
 ├── agent/                             # Decision engine & orchestration
@@ -130,4 +129,4 @@ Define strict Pydantic models for all agent outputs:
 ## Instructions for the Assistant
 1. Initialize the complete repository structure with all mentioned folders and empty `__init__.py` files.
 2. Generate all core classes with clean docstrings, comprehensive type annotations, robust error handling, and separation of concerns.
-3. Keep external dependencies well-isolated and provide a complete `requirements.txt`.
+3. Keep external dependencies well-isolated and declare them all in `pyproject.toml` (runtime dependencies plus a `dev` extra).

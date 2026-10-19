@@ -8,7 +8,7 @@ rejected early and deterministically.
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Optional, Self
+from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -62,25 +62,23 @@ class AgentAction(BaseModel):
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
-    thought: str = Field(
-        ..., description="Step-by-step reasoning behind the action"
-    )
+    thought: str = Field(..., description="Step-by-step reasoning behind the action")
     action_type: ActionType
-    target_id: Optional[int] = Field(
+    target_id: int | None = Field(
         default=None,
         ge=0,
         description="Set-of-Mark grid or element ID",
     )
-    coordinate: Optional[Coordinate] = Field(
+    coordinate: Coordinate | None = Field(
         default=None,
         description="Direct pixel target",
     )
-    drag_end_coordinate: Optional[Coordinate] = Field(
+    drag_end_coordinate: Coordinate | None = Field(
         default=None,
         description="End coordinate for drag action",
     )
-    text: Optional[str] = Field(default=None, description="Text payload to type")
-    key: Optional[str] = Field(
+    text: str | None = Field(default=None, description="Text payload to type")
+    key: str | None = Field(
         default=None,
         description="Special key stroke (e.g. enter, esc)",
     )
@@ -128,7 +126,7 @@ class AgentAction(BaseModel):
         return self
 
     @property
-    def drag_payload(self) -> Optional[DragActionPayload]:
+    def drag_payload(self) -> DragActionPayload | None:
         """Return the drag geometry as a dedicated payload when available."""
 
         if self.coordinate is None or self.drag_end_coordinate is None:

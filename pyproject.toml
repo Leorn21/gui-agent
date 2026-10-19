@@ -7,9 +7,27 @@ name = "gui-agent"
 version = "0.1.0"
 description = "Modular GUI agent scaffold"
 requires-python = ">=3.14"
+dependencies = [
+    "pydantic>=2.0,<3.0",
+    "numpy>=1.26",
+    "mss>=10.0",
+    "opencv-python>=4.8",
+    "Pillow>=10.0",
+    "pyautogui>=0.9.54",
+    "pynput>=1.7",
+    "rich>=13.0",
+    "typer>=0.12",
+    "scikit-image>=0.22",
+]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0"]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.17",
+]
+
+[tool.setuptools.packages.find]
+include = ["agent*", "controller*", "schemas*", "vision*"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
@@ -17,4 +35,18 @@ testpaths = ["tests"]
 addopts = "-m 'not integration'"
 markers = [
     "integration: touches the real screen, input devices or external APIs (run with: pytest -m integration)",
+]
+
+[tool.ruff]
+target-version = "py314"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
 ]

@@ -16,7 +16,6 @@ dependencies = [
     "pynput>=1.7",
     "rich>=13.0",
     "typer>=0.12",
-    "scikit-image>=0.22",
 ]
 
 [project.optional-dependencies]

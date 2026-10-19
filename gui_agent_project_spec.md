@@ -83,7 +83,7 @@ Define strict Pydantic models for all agent outputs:
 
 ### 4. `vision/diff.py`
 - Class `FrameDiff`:
-  - Compares `frame_before` and `frame_after` using structural similarity (SSIM) or thresholded delta pixels to verify if an action produced a visual change.
+  - Compares `frame_before` and `frame_after` with a thresholded pixel delta (OpenCV), merging nearby changes into regions and ignoring regions below a minimum area, to verify if an action produced a visual change.
 
 ### 5. `controller/base.py` & `controller/os_controller.py`
 - `BaseController` (ABC):

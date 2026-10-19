@@ -61,6 +61,24 @@ def test_system_prompt_protects_existing_documents():
     assert "existing" in text and "new tab" in text
 
 
+def test_system_prompt_says_to_read_the_printed_cell_number():
+    # Found in the second real run: Haiku computed a far-away cell from pixels.
+    text = SYSTEM_PROMPT.lower()
+    assert "printed" in text
+    assert "do not compute" in text
+
+
+@pytest.mark.parametrize(
+    "key", ["win", "enter", "tab", "esc", "ctrl+c", "ctrl+v", "ctrl+z", "alt+tab"]
+)
+def test_system_prompt_lists_the_allowed_keys(key):
+    assert key in SYSTEM_PROMPT.lower()
+
+
+def test_zoom_prompt_says_to_read_the_printed_cell_number():
+    assert "printed" in ZOOM_SYSTEM_PROMPT.lower()
+
+
 def test_system_prompt_is_english_and_static():
     # Static text keeps the cacheable prefix byte-identical between calls.
     assert "{" not in SYSTEM_PROMPT

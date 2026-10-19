@@ -22,6 +22,7 @@ class ActionType(StrEnum):
     TYPE = "TYPE"
     PRESS_KEY = "PRESS_KEY"
     DRAG = "DRAG"
+    SCROLL = "SCROLL"
     WAIT = "WAIT"
     FINISH = "FINISH"
     FAIL = "FAIL"
@@ -80,7 +81,11 @@ class AgentAction(BaseModel):
     text: str | None = Field(default=None, description="Text payload to type")
     key: str | None = Field(
         default=None,
-        description="Special key stroke (e.g. enter, esc)",
+        description="Special key stroke or combo (e.g. enter, ctrl+s)",
+    )
+    scroll_amount: int | None = Field(
+        default=None,
+        description="Wheel notches to scroll; positive scrolls down",
     )
     duration: float = Field(
         default=0.5,
@@ -105,6 +110,12 @@ class AgentAction(BaseModel):
                 raise ValueError(
                     f"{self.action_type} requires either coordinate or target_id"
                 )
+
+        if self.action_type is ActionType.SCROLL:
+            if self.coordinate is None and self.target_id is None:
+                raise ValueError("SCROLL requires either coordinate or target_id")
+            if not self.scroll_amount:
+                raise ValueError("SCROLL requires a non-zero scroll_amount")
 
         if self.action_type is ActionType.TYPE:
             if self.text is None or not self.text.strip():

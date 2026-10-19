@@ -11,7 +11,7 @@ The agent observes the user's desktop screen, tags interactive zones/grid coordi
 - Language: Python 3.14+
 - Type Hinting & Validation: Strict typing with Pydantic v2
 - Image & Screen Capture: `mss` (high-performance in-memory screen capturing) + `OpenCV` (cv2) / `Pillow` (PIL)
-- OS Automation: `pyautogui` / `pynput` with abstract base controller architecture
+- OS Automation: `pynput` (mouse and keyboard, Unicode typing) with abstract base controller architecture
 - Safety: Asynchronous global emergency kill-switch (e.g. Esc key or mouse panic corner)
 - Modularity: Separation of Concerns (Vision, Controller, Agent/FSM, Schemas, Telemetry)
 
@@ -93,7 +93,7 @@ Define strict Pydantic models for all agent outputs:
   - `press_key(key)`
   - `drag(start_x, start_y, end_x, end_y, duration)`
 - `OSController` implementation:
-  - Implements the methods using `pyautogui` / `pynput`.
+  - Implements the methods using `pynput`.
   - Normalizes coordinate scaling (e.g., Retina / High-DPI screens).
 
 ### 6. `controller/safety.py`

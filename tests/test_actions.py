@@ -50,3 +50,46 @@ def test_scroll_requires_target_and_nonzero_amount(fields):
 def test_finish_action_sets_terminal():
     action = AgentAction(thought="Done", action_type=ActionType.FINISH)
     assert action.is_terminal is True
+
+
+def test_drag_between_grid_cells():
+    action = AgentAction(
+        thought="Move the file to the folder",
+        action_type=ActionType.DRAG,
+        target_id=12,
+        drag_end_target_id=57,
+    )
+    assert (action.target_id, action.drag_end_target_id) == (12, 57)
+
+
+def test_drag_between_coordinates_still_works():
+    action = AgentAction(
+        thought="Drag",
+        action_type=ActionType.DRAG,
+        coordinate=Coordinate(x=10, y=10),
+        drag_end_coordinate=Coordinate(x=50, y=50),
+    )
+    assert action.drag_payload is not None
+
+
+@pytest.mark.parametrize(
+    "fields",
+    [
+        {"target_id": 12},  # no end
+        {"drag_end_target_id": 57},  # no start
+        {"target_id": 12, "drag_end_coordinate": Coordinate(x=5, y=5)},  # mixed
+    ],
+)
+def test_drag_needs_two_cells_or_two_coordinates(fields):
+    with pytest.raises(ValidationError):
+        AgentAction(thought="Drag", action_type=ActionType.DRAG, **fields)
+
+
+def test_drag_end_target_id_must_not_be_negative():
+    with pytest.raises(ValidationError):
+        AgentAction(
+            thought="Drag",
+            action_type=ActionType.DRAG,
+            target_id=1,
+            drag_end_target_id=-1,
+        )

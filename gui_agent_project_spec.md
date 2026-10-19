@@ -112,12 +112,13 @@ Define strict Pydantic models for all agent outputs:
 ### 8. `agent/state_machine.py`
 - Class `AgentStateMachine`:
   - Encapsulates the execution loop:
-    1. **Check Safety:** Ensure kill-switch is not triggered.
+    1. **Check Safety:** Ensure kill-switch is not triggered (a pause discards the step and re-perceives; an abort ends the run).
     2. **Perceive:** Capture screen and apply visual tags.
-    3. **Decide:** Send context + tagged screenshot to `Planner`.
-    4. **Act:** Execute action via `OSController`.
-    5. **Evaluate:** Capture post-action frame, compute diff, update short-term memory.
-    6. **Terminate:** Break when `is_terminal` is True or max steps exceeded.
+    3. **Decide:** Send context + tagged screenshot to `Planner`; refine click/scroll/drag targets on a zoomed region (the cell plus its neighbours, 8x8 grid).
+    4. **Act:** Execute action via `OSController` (WAIT capped at 10 s).
+    5. **Evaluate:** Wait for the screen to change and settle, compute diff, update short-term memory.
+    6. **Terminate:** Break on FINISH/FAIL, max steps, or 3 consecutive actions without visible change.
+  - Logs every run to `runs/<timestamp>/` (annotated steps, actions, cost), keeping the last 10.
 
 ### 9. `main.py`
 - Rich CLI interface (using `argparse` or `typer` + `rich` for formatting).

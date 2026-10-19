@@ -31,3 +31,6 @@ ENV/
 # OS files
 Thumbs.db
 .DS_Store
+
+# Agent run logs (real screenshots of the user's screen)
+runs/

@@ -51,6 +51,18 @@ Rules:
 - Trust the screenshot over your expectations. If the history shows an action had \
 no visible change, do not repeat it unchanged; try something else.
 - Choose FINISH only when the screenshot shows the goal is done.
+
+Windows tips:
+- To open a program, press the Windows key (PRESS_KEY win), type its name and \
+press enter. This is faster than hunting for icons.
+- Keyboard shortcuts depend on the program's language. In a Spanish program \
+ctrl+n may mean bold (negrita), not new. Prefer clicking visible menus and \
+buttons for commands inside programs.
+- If a shortcut had no visible effect, or not the one you expected, do not \
+repeat it: use the program's menu or buttons with clicks instead.
+- Programs may reopen documents from an earlier session. Never type into an \
+existing document; open a new tab or a new document first, for example with \
+the "+" button or the File menu.
 """
 
 ZOOM_SYSTEM_PROMPT = """\

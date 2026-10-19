@@ -37,6 +37,30 @@ def test_system_prompt_forbids_the_safety_hotkeys():
     assert "ctrl+alt+r" in SYSTEM_PROMPT.lower()
 
 
+def test_system_prompt_suggests_the_windows_key_to_open_programs():
+    text = SYSTEM_PROMPT.lower()
+    assert "windows key" in text
+    assert "press_key win" in text
+
+
+def test_system_prompt_warns_that_shortcuts_depend_on_the_language():
+    # Found in the first real run: in a Spanish Notepad ctrl+n is bold, not new.
+    text = SYSTEM_PROMPT.lower()
+    assert "language" in text
+    assert "ctrl+n" in text
+
+
+def test_system_prompt_falls_back_to_clicks_after_a_shortcut_does_nothing():
+    text = SYSTEM_PROMPT.lower()
+    assert "shortcut" in text
+    assert "click" in text and "menu" in text
+
+
+def test_system_prompt_protects_existing_documents():
+    text = SYSTEM_PROMPT.lower()
+    assert "existing" in text and "new tab" in text
+
+
 def test_system_prompt_is_english_and_static():
     # Static text keeps the cacheable prefix byte-identical between calls.
     assert "{" not in SYSTEM_PROMPT

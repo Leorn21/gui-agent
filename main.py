@@ -30,6 +30,7 @@ from ui.command_bar import DEFAULT_START_DELAY, format_hotkey
 DEFAULT_MODEL = "claude-haiku-5-5"
 DEFAULT_EFFORT = "low"
 DEFAULT_MAX_STEPS = 20
+DEFAULT_ZOOM_MARGIN = 0.5
 
 
 @dataclass(frozen=True)
@@ -41,6 +42,7 @@ class Settings:
     max_steps: int
     pause_hotkey: str
     resume_hotkey: str
+    zoom_margin: float
     has_api_key: bool
 
 
@@ -48,19 +50,25 @@ def load_settings(env: Mapping[str, str]) -> Settings:
     """Read settings from an environment mapping.
 
     Raises:
-        ValueError: If ``GUI_AGENT_MAX_STEPS`` is not a positive integer.
+        ValueError: If ``GUI_AGENT_MAX_STEPS`` is not a positive integer or
+            ``GUI_AGENT_ZOOM_MARGIN`` is not a number in ``(0, 2]``.
     """
 
     raw_steps = env.get("GUI_AGENT_MAX_STEPS", "") or str(DEFAULT_MAX_STEPS)
     max_steps = int(raw_steps)
     if max_steps < 1:
         raise ValueError(f"GUI_AGENT_MAX_STEPS must be at least 1, got {raw_steps}")
+    raw_margin = env.get("GUI_AGENT_ZOOM_MARGIN", "") or str(DEFAULT_ZOOM_MARGIN)
+    zoom_margin = float(raw_margin)
+    if not 0 < zoom_margin <= 2:
+        raise ValueError(f"GUI_AGENT_ZOOM_MARGIN must be in (0, 2], got {raw_margin}")
     return Settings(
         model=env.get("GUI_AGENT_MODEL") or DEFAULT_MODEL,
         effort=env.get("GUI_AGENT_EFFORT") or DEFAULT_EFFORT,
         max_steps=max_steps,
         pause_hotkey=env.get("GUI_AGENT_SAFETY_HOTKEY") or DEFAULT_PAUSE_HOTKEY,
         resume_hotkey=env.get("GUI_AGENT_RESUME_HOTKEY") or DEFAULT_RESUME_HOTKEY,
+        zoom_margin=zoom_margin,
         has_api_key=bool(env.get("ANTHROPIC_API_KEY", "").strip()),
     )
 
@@ -188,6 +196,7 @@ class _Session:
                 safety=safety,
                 recorder=RunRecorder(),
                 max_steps=s.max_steps,
+                zoom_margin=s.zoom_margin,
                 on_step=self._on_step,
             )
             return machine.run(goal)

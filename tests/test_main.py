@@ -25,7 +25,20 @@ def test_settings_defaults():
     assert s.max_steps == 20
     assert s.pause_hotkey == "ctrl+alt+q"
     assert s.resume_hotkey == "ctrl+alt+r"
+    assert s.zoom_margin == 0.5
     assert s.has_api_key is True
+
+
+def test_zoom_margin_from_env():
+    assert (
+        main.load_settings({**KEY_ENV, "GUI_AGENT_ZOOM_MARGIN": "1"}).zoom_margin == 1.0
+    )
+
+
+@pytest.mark.parametrize("value", ["abc", "0", "-1", "2.5"])
+def test_invalid_zoom_margin_raises(value):
+    with pytest.raises(ValueError):
+        main.load_settings({**KEY_ENV, "GUI_AGENT_ZOOM_MARGIN": value})
 
 
 def test_settings_from_env():

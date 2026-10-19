@@ -8,7 +8,7 @@ The agent observes the user's desktop screen, tags interactive zones/grid coordi
 ---
 
 ## Technical Stack & Constraints
-- Language: Python 3.12+
+- Language: Python 3.14+
 - Type Hinting & Validation: Strict typing with Pydantic v2
 - Image & Screen Capture: `mss` (high-performance in-memory screen capturing) + `OpenCV` (cv2) / `Pillow` (PIL)
 - OS Automation: `pyautogui` / `pynput` with abstract base controller architecture
@@ -48,7 +48,7 @@ gui-agent-core/
 │
 ├── schemas/                           # Typed contracts & Pydantic models
 │   ├── __init__.py
-│   └── actions.py                     # Action schemas (Click, Type, Drag, Wait, Finish, Error)
+│   └── actions.py                     # Action schemas (Click, Type, Drag, Wait, Finish, Fail)
 │
 └── main.py                            # CLI entrypoint & execution harness
 ```

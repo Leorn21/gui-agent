@@ -6,4 +6,15 @@ build-backend = "setuptools.build_meta"
 name = "gui-agent"
 version = "0.1.0"
 description = "Modular GUI agent scaffold"
-requires-python = ">=3.12"
+requires-python = ">=3.14"
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "-m 'not integration'"
+markers = [
+    "integration: touches the real screen, input devices or external APIs (run with: pytest -m integration)",
+]

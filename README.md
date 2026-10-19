@@ -1,22 +1,33 @@
 # GUI Agent
 
-Repositorio base para un agente GUI modular en Python, orientado a observación de pantalla, etiquetado visual, planificación con VLM y automatización a nivel de sistema operativo.
+Base repository for a modular Python GUI agent focused on screen observation, visual tagging, VLM-based planning, and operating system-level automation.
 
-## Estructura inicial
+## Initial Structure
 
-- `agent/`: orquestación, planner y prompts.
-- `vision/`: captura de pantalla, tagger visual y diffs.
-- `controller/`: abstracción de control del sistema y seguridad.
-- `schemas/`: modelos tipados de acciones del agente.
-- `main.py`: entrypoint del CLI.
+- `agent/`: orchestration, planner, and prompts.
+- `vision/`: screen capture, visual tagging, and frame diffs.
+- `controller/`: system control abstraction and safety.
+- `schemas/`: typed action models for the agent.
+- `main.py`: CLI entrypoint.
 
-## Estado actual
+## Setup
 
-Este commit deja solo el andamiaje del proyecto. No hay implementación funcional todavía.
+Create and activate the virtual environment before installing dependencies or running tests (the global Python does not have them installed):
 
-## Próximos pasos
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python -m pytest
+```
 
-1. Implementar primero `schemas/actions.py`.
-2. Luego `vision/capture.py` y `vision/som_tagger.py`.
-3. Después `controller/base.py` y `controller/os_controller.py`.
-4. Finalmente `agent/planner.py`, `agent/state_machine.py` y `main.py`.
+## Current State
+
+This commit only provides the project scaffold. There is no functional implementation yet.
+
+## Next Steps
+
+1. Implement `schemas/actions.py` first.
+2. Then add `vision/capture.py` and `vision/som_tagger.py`.
+3. After that, implement `controller/base.py` and `controller/os_controller.py`.
+4. Finally, wire up `agent/planner.py`, `agent/state_machine.py`, and `main.py`.

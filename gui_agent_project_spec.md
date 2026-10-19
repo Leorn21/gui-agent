@@ -121,9 +121,9 @@ Define strict Pydantic models for all agent outputs:
   - Logs every run to `runs/<timestamp>/` (annotated steps, actions, cost), keeping the last 10.
 
 ### 9. `main.py`
-- Rich CLI interface (using `argparse` or `typer` + `rich` for formatting).
-- Accepts a natural language prompt from the user (e.g., `python main.py --goal "Open Notepad and type Hello World"`).
-- Initializes safety listener, runs the agent loop with informative logging.
+- Without arguments, opens a floating command bar (`ui/command_bar.py`, tkinter): type a goal and press Enter. While the agent works the bar becomes a small status pill (bottom-right), masked out of the agent's screenshots and protected from its clicks.
+- With `--goal "..."` (e.g., `python main.py --goal "Open Notepad and type Hello World"`), runs one goal in the console (`argparse`).
+- Loads settings from `.env` (`python-dotenv`), initializes the safety listener, runs the agent loop and prints each step, safety notices and the final result with its cost.
 
 ---
 

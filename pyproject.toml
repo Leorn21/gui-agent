@@ -15,6 +15,7 @@ dependencies = [
     "opencv-python>=4.8",
     "Pillow>=10.0",
     "pynput>=1.7",
+    "python-dotenv>=1.0",
     "rich>=13.0",
     "typer>=0.12",
 ]
@@ -25,8 +26,11 @@ dev = [
     "ruff>=0.17",
 ]
 
+[tool.setuptools]
+py-modules = ["main"]
+
 [tool.setuptools.packages.find]
-include = ["agent*", "controller*", "schemas*", "vision*"]
+include = ["agent*", "controller*", "schemas*", "ui*", "vision*"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

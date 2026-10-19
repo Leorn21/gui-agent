@@ -30,6 +30,9 @@ DEFAULT_PAUSE_HOTKEY = "ctrl+alt+q"
 DEFAULT_RESUME_HOTKEY = "ctrl+alt+r"
 DEFAULT_DEBOUNCE = 0.5  # seconds; absorbs keyboard auto-repeat on a held hotkey
 
+# Friendly names for keys pynput calls differently ("cmd" is the Windows key).
+KEY_ALIASES = {"win": "cmd", "windows": "cmd", "super": "cmd"}
+
 logger = logging.getLogger(__name__)
 
 
@@ -64,7 +67,8 @@ def to_pynput_hotkey(text: str) -> str:
     """Convert ``"ctrl+alt+q"`` style text to pynput's ``"<ctrl>+<alt>+q"``.
 
     Case and spaces are ignored; single characters stay bare and named keys
-    (``ctrl``, ``f12``...) are wrapped in angle brackets.
+    (``ctrl``, ``f12``...) are wrapped in angle brackets. ``win`` and
+    ``windows`` mean the Windows key (pynput's ``cmd``).
 
     Raises:
         ValueError: If the text is empty, has an empty part or names an
@@ -75,6 +79,7 @@ def to_pynput_hotkey(text: str) -> str:
     if not text.strip() or any(not part for part in parts):
         raise ValueError(f"Invalid hotkey: {text!r}")
 
+    parts = [KEY_ALIASES.get(part, part) for part in parts]
     combo = "+".join(part if len(part) == 1 else f"<{part}>" for part in parts)
     try:
         keyboard.HotKey.parse(combo)

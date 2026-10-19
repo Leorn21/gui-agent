@@ -90,6 +90,8 @@ def test_defaults_are_ctrl_alt_q_and_r():
         ("ctrl+alt+q", "<ctrl>+<alt>+q"),
         ("Ctrl + Alt + Q", "<ctrl>+<alt>+q"),
         ("ctrl+shift+f12", "<ctrl>+<shift>+<f12>"),
+        ("win", "<cmd>"),  # pynput calls the Windows key "cmd"
+        ("Windows+R", "<cmd>+r"),
     ],
 )
 def test_to_pynput_hotkey(text, expected):

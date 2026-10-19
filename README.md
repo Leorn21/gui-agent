@@ -2,13 +2,14 @@
 
 Base repository for a modular Python GUI agent focused on screen observation, visual tagging, VLM-based planning, and operating system-level automation.
 
-## Initial Structure
+## Structure
 
-- `agent/`: orchestration, planner, and prompts.
-- `vision/`: screen capture, visual tagging, and frame diffs.
-- `controller/`: system control abstraction and safety.
+- `agent/`: planner (Claude), prompts, the agent loop and the run recorder.
+- `vision/`: screen capture, Set-of-Mark grid and frame diffs.
+- `controller/`: mouse/keyboard control (pynput) and the emergency switch.
 - `schemas/`: typed action models for the agent.
-- `main.py`: CLI entrypoint.
+- `ui/`: floating command bar.
+- `main.py`: entry point.
 
 ## Setup
 
@@ -31,13 +32,18 @@ ruff format --check .
 python -m pytest
 ```
 
-## Current State
+## Usage
 
-This commit only provides the project scaffold. There is no functional implementation yet.
+Copy `.env.example` to `.env` and set `ANTHROPIC_API_KEY` (the API is billed separately from a Claude subscription). Then:
 
-## Next Steps
+```powershell
+python main.py
+```
 
-1. Implement `schemas/actions.py` first.
-2. Then add `vision/capture.py` and `vision/som_tagger.py`.
-3. After that, implement `controller/base.py` and `controller/os_controller.py`.
-4. Finally, wire up `agent/planner.py`, `agent/state_machine.py`, and `main.py`.
+opens a floating bar: type a goal, press Enter, and the agent works while a small status pill shows its progress. Or run one goal in the console:
+
+```powershell
+python main.py --goal "Open Notepad and type Hello World"
+```
+
+While the agent runs, **Ctrl+Alt+Q** pauses it; while paused, **Ctrl+Alt+R** resumes and **Ctrl+Alt+Q** again stops it. The console shows every step, its cost, and where the run log was saved (`runs/`, gitignored: it holds real screenshots).

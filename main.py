@@ -154,10 +154,12 @@ class _Session:
         settings: Settings,
         on_step: Callable[[StepEvent], None],
         pill: tuple[int, int, int, int] | None = None,
+        on_safety: Callable[[SafetyState], None] | None = None,
     ) -> None:
         self._settings = settings
         self._on_step = on_step
         self._pill = pill
+        self._on_safety = on_safety
 
     def run(self, goal: str) -> RunResult:
         from agent.planner import Planner
@@ -173,6 +175,8 @@ class _Session:
         def on_safety(state: SafetyState) -> None:
             print(safety_notice(state, s.pause_hotkey, s.resume_hotkey), flush=True)
             _beep(str(state))
+            if self._on_safety:
+                self._on_safety(state)
 
         safety = EmergencyKillSwitch(
             pause_hotkey=s.pause_hotkey,
@@ -241,9 +245,13 @@ def run_bar(settings: Settings) -> int:
     print("Barra abierta: escribí la tarea y Enter. Esc la cierra.", flush=True)
     bar = CommandBar(
         build=lambda on_step, pill: _Session(
-            settings, lambda e: (_print_step(e), on_step(e)), pill
+            settings,
+            lambda e: (_print_step(e), on_step(e)),
+            pill,
+            on_safety=lambda state: bar.notify_safety(state),
         ),
         pause_hotkey=settings.pause_hotkey,
+        resume_hotkey=settings.resume_hotkey,
         on_done=_print_done,
     )
     bar.run()

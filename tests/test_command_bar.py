@@ -15,13 +15,24 @@ from agent.state_machine import RunResult, RunStatus, StepEvent
 from schemas.actions import ActionType, AgentAction
 from tests import scenes
 from ui.command_bar import (
+    DWMWA_BORDER_COLOR,
+    DWMWA_WINDOW_CORNER_PREFERENCE,
+    DWMWCP_ROUND,
     MASK_COLOR,
+    PAUSED_BORDER,
     PILL_MARGIN,
     PILL_SIZE,
+    PULSE_BASE,
+    PULSE_PEAK,
     AgentRunner,
     GuardedController,
     MaskedScreen,
+    apply_rounded_corners,
+    hex_to_colorref,
+    paused_text,
+    pill_border,
     pill_rect,
+    pulse_color,
     result_text,
     step_text,
 )
@@ -294,3 +305,70 @@ def test_errors_are_reported_not_raised():
 
     assert done == [(None, boom)]
     assert runner.is_running is False
+
+
+# ------------------------------------------------------------------ styling
+
+
+def test_hex_to_colorref_is_bgr():
+    # Windows COLORREF is 0x00BBGGRR.
+    assert hex_to_colorref("#7c5cff") == 0x00FF5C7C
+    assert hex_to_colorref("#000000") == 0
+
+
+class FakeDwm:
+    def __init__(self, fail=False):
+        self.calls = []
+        self.fail = fail
+
+    def set_attribute(self, hwnd, attribute, value):
+        self.calls.append((hwnd, attribute, value))
+        if self.fail:
+            raise OSError("not supported")
+
+
+def test_rounded_corners_ask_windows_for_round_corners_and_a_border_color():
+    dwm = FakeDwm()
+
+    assert apply_rounded_corners(1234, border="#7c5cff", dwm=dwm) is True
+    assert dwm.calls == [
+        (1234, DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND),
+        (1234, DWMWA_BORDER_COLOR, 0x00FF5C7C),
+    ]
+
+
+def test_rounded_corners_are_optional():
+    # Windows 10 or another OS: the bar stays rectangular, nothing breaks.
+    assert apply_rounded_corners(1234, border="#7c5cff", dwm=None) is False
+    assert (
+        apply_rounded_corners(1234, border="#7c5cff", dwm=FakeDwm(fail=True)) is False
+    )
+
+
+def test_pulse_goes_from_base_to_peak_and_back():
+    assert pulse_color(0.0) == PULSE_BASE
+    assert pulse_color(0.5) == PULSE_PEAK
+    assert pulse_color(1.0) == PULSE_BASE
+    assert pulse_color(0.25) not in (PULSE_BASE, PULSE_PEAK)
+
+
+def test_pulse_wraps_around_and_is_a_hex_color():
+    assert pulse_color(1.25) == pulse_color(0.25)
+    color = pulse_color(0.3)
+    assert color.startswith("#") and len(color) == 7
+    int(color[1:], 16)
+
+
+def test_pill_border_pulses_while_running_and_is_amber_while_paused():
+    from controller.safety import SafetyState
+
+    assert pill_border(SafetyState.RUNNING, 0.5) == PULSE_PEAK
+    assert pill_border(SafetyState.PAUSED, 0.0) == PAUSED_BORDER
+    assert pill_border(SafetyState.PAUSED, 0.5) == PAUSED_BORDER
+
+
+def test_pill_text_while_paused_explains_how_to_continue():
+    text = paused_text(pause_hotkey="ctrl+alt+q", resume_hotkey="ctrl+alt+r")
+
+    assert "Pausado" in text
+    assert "Ctrl+Alt+R" in text and "Ctrl+Alt+Q" in text

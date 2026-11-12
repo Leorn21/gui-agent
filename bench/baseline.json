@@ -1,0 +1,590 @@
+{
+  "summary": {
+    "scenes": 21,
+    "hits": 19,
+    "hit_rate": 0.9047619047619048,
+    "mean_distance_px": 39.12591463898283,
+    "median_distance_px": 12.206555615733702,
+    "coarse_hits": 7,
+    "no_point": 0,
+    "calls": 42,
+    "cost_usd": 0.147733,
+    "by_kind": {
+      "edge": {
+        "scenes": 7,
+        "hits": 6,
+        "hit_rate": 0.8571428571428571,
+        "mean_distance_px": 23.419308217975644,
+        "median_distance_px": 12.206555615733702,
+        "coarse_hits": 4
+      },
+      "large": {
+        "scenes": 5,
+        "hits": 5,
+        "hit_rate": 1.0,
+        "mean_distance_px": 70.82088834548208,
+        "median_distance_px": 9.433981132056603,
+        "coarse_hits": 3
+      },
+      "small": {
+        "scenes": 9,
+        "hits": 8,
+        "hit_rate": 0.8888888888888888,
+        "mean_distance_px": 33.733845351711054,
+        "median_distance_px": 14.317821063276353,
+        "coarse_hits": 0
+      }
+    },
+    "model": "claude-sonnet-5-5",
+    "effort": "low",
+    "stopped_by_budget": false
+  },
+  "scenes": [
+    {
+      "name": "notes_save_button",
+      "kind": "large",
+      "goal": "Click the blue 'Guardar' (Save) button in the toolbar.",
+      "target": [
+        330,
+        78,
+        140,
+        36
+      ],
+      "action_type": "CLICK",
+      "coarse_cell": 24,
+      "coarse_point": [
+        432,
+        135
+      ],
+      "point": [
+        396,
+        101
+      ],
+      "hit": true,
+      "distance_px": 6.4031242374328485,
+      "calls": 2,
+      "cost_usd": 0.012365,
+      "error": null
+    },
+    {
+      "name": "form_username_field",
+      "kind": "large",
+      "goal": "Click the 'Username' text field.",
+      "target": [
+        700,
+        405,
+        520,
+        48
+      ],
+      "action_type": "CLICK",
+      "coarse_cell": 90,
+      "coarse_point": [
+        1008,
+        405
+      ],
+      "point": [
+        996,
+        439
+      ],
+      "hit": true,
+      "distance_px": 37.36308338453881,
+      "calls": 2,
+      "cost_usd": 0.006265199999999999,
+      "error": null
+    },
+    {
+      "name": "menu_save_as",
+      "kind": "small",
+      "goal": "In the open File menu, click the 'Save as...' entry.",
+      "target": [
+        12,
+        128,
+        236,
+        30
+      ],
+      "action_type": "CLICK",
+      "coarse_cell": 40,
+      "coarse_point": [
+        48,
+        225
+      ],
+      "point": [
+        63,
+        146
+      ],
+      "hit": true,
+      "distance_px": 67.06713054842886,
+      "calls": 2,
+      "cost_usd": 0.0063812,
+      "error": null
+    },
+    {
+      "name": "icon_top_left",
+      "kind": "small",
+      "goal": "Click the orange cross icon in the row of icons.",
+      "target": [
+        168,
+        70,
+        32,
+        32
+      ],
+      "action_type": "CLICK",
+      "coarse_cell": 1,
+      "coarse_point": [
+        144,
+        45
+      ],
+      "point": [
+        180,
+        92
+      ],
+      "hit": true,
+      "distance_px": 7.211102550927978,
+      "calls": 2,
+      "cost_usd": 0.006801200000000001,
+      "error": null
+    },
+    {
+      "name": "edge_chat_message_box",
+      "kind": "edge",
+      "goal": "Click the message box at the bottom of the chat window.",
+      "target": [
+        576,
+        750,
+        600,
+        54
+      ],
+      "action_type": "CLICK",
+      "coarse_cell": 169,
+      "coarse_point": [
+        912,
+        765
+      ],
+      "point": [
+        924,
+        844
+      ],
+      "hit": false,
+      "distance_px": 82.41965784932621,
+      "calls": 2,
+      "cost_usd": 0.0068052,
+      "error": null
+    },
+    {
+      "name": "slider_handle",
+      "kind": "small",
+      "goal": "Click the handle of the Volume slider.",
+      "target": [
+        992,
+        500,
+        16,
+        22
+      ],
+      "action_type": "CLICK",
+      "coarse_cell": 110,
+      "coarse_point": [
+        1008,
+        495
+      ],
+      "point": [
+        996,
+        506
+      ],
+      "hit": true,
+      "distance_px": 6.4031242374328485,
+      "calls": 2,
+      "cost_usd": 0.006609199999999999,
+      "error": null
+    },
+    {
+      "name": "notes_export_button",
+      "kind": "large",
+      "goal": "Click the grey 'Exportar' button in the toolbar.",
+      "target": [
+        630,
+        78,
+        140,
+        36
+      ],
+      "action_type": "CLICK",
+      "coarse_cell": 27,
+      "coarse_point": [
+        720,
+        135
+      ],
+      "point": [
+        708,
+        101
+      ],
+      "hit": true,
+      "distance_px": 9.433981132056603,
+      "calls": 2,
+      "cost_usd": 0.0066872,
+      "error": null
+    },
+    {
+      "name": "form_sign_in_button",
+      "kind": "large",
+      "goal": "Click the blue 'Sign in' button.",
+      "target": [
+        700,
+        640,
+        200,
+        52
+      ],
+      "action_type": "CLICK",
+      "coarse_cell": 148,
+      "coarse_point": [
+        816,
+        675
+      ],
+      "point": [
+        804,
+        664
+      ],
+      "hit": true,
+      "distance_px": 4.47213595499958,
+      "calls": 2,
+      "cost_usd": 0.0061612,
+      "error": null
+    },
+    {
+      "name": "menu_exit",
+      "kind": "small",
+      "goal": "In the open File menu, click the 'Exit' entry.",
+      "target": [
+        12,
+        188,
+        236,
+        30
+      ],
+      "action_type": "CLICK",
+      "coarse_cell": 40,
+      "coarse_point": [
+        48,
+        225
+      ],
+      "point": [
+        27,
+        191
+      ],
+      "hit": true,
+      "distance_px": 103.69667304209909,
+      "calls": 2,
+      "cost_usd": 0.0065392,
+      "error": null
+    },
+    {
+      "name": "icon_top_right",
+      "kind": "small",
+      "goal": "Click the purple diamond icon in the row of icons.",
+      "target": [
+        1680,
+        70,
+        28,
+        28
+      ],
+      "action_type": "CLICK",
+      "coarse_cell": 17,
+      "coarse_point": [
+        1680,
+        45
+      ],
+      "point": [
+        1716,
+        76
+      ],
+      "hit": false,
+      "distance_px": 23.40939982143925,
+      "calls": 2,
+      "cost_usd": 0.0066672,
+      "error": null
+    },
+    {
+      "name": "edge_chat_send_button",
+      "kind": "edge",
+      "goal": "Click the blue 'Send' button at the bottom right of the chat window.",
+      "target": [
+        1190,
+        750,
+        150,
+        54
+      ],
+      "action_type": "CLICK",
+      "coarse_cell": 173,
+      "coarse_point": [
+        1296,
+        765
+      ],
+      "point": [
+        1284,
+        776
+      ],
+      "hit": true,
+      "distance_px": 19.026297590440446,
+      "calls": 2,
+      "cost_usd": 0.0067932,
+      "error": null
+    },
+    {
+      "name": "notes_editor",
+      "kind": "large",
+      "goal": "Click inside the large white text editor to place the cursor.",
+      "target": [
+        340,
+        400,
+        1520,
+        560
+      ],
+      "action_type": "CLICK",
+      "coarse_cell": 148,
+      "coarse_point": [
+        816,
+        675
+      ],
+      "point": [
+        804,
+        664
+      ],
+      "hit": true,
+      "distance_px": 296.4321170183825,
+      "calls": 2,
+      "cost_usd": 0.0058032,
+      "error": null
+    },
+    {
+      "name": "form_remember_checkbox",
+      "kind": "small",
+      "goal": "Click the 'Remember me' checkbox.",
+      "target": [
+        700,
+        580,
+        20,
+        20
+      ],
+      "action_type": "CLICK",
+      "coarse_cell": 127,
+      "coarse_point": [
+        720,
+        585
+      ],
+      "point": [
+        708,
+        596
+      ],
+      "hit": true,
+      "distance_px": 6.324555320336759,
+      "calls": 2,
+      "cost_usd": 0.0059932,
+      "error": null
+    },
+    {
+      "name": "context_delete",
+      "kind": "small",
+      "goal": "In the context menu, click the 'Delete' entry.",
+      "target": [
+        902,
+        616,
+        216,
+        28
+      ],
+      "action_type": "CLICK",
+      "coarse_cell": 149,
+      "coarse_point": [
+        912,
+        675
+      ],
+      "point": [
+        948,
+        619
+      ],
+      "hit": true,
+      "distance_px": 62.96824596572466,
+      "calls": 2,
+      "cost_usd": 0.0079292,
+      "error": null
+    },
+    {
+      "name": "icon_center",
+      "kind": "small",
+      "goal": "Click the blue triangle icon in the row of icons.",
+      "target": [
+        924,
+        520,
+        36,
+        36
+      ],
+      "action_type": "CLICK",
+      "coarse_cell": 109,
+      "coarse_point": [
+        912,
+        495
+      ],
+      "point": [
+        948,
+        551
+      ],
+      "hit": true,
+      "distance_px": 14.317821063276353,
+      "calls": 2,
+      "cost_usd": 0.0076492,
+      "error": null
+    },
+    {
+      "name": "edge_close_button",
+      "kind": "edge",
+      "goal": "Click the red close button in the top-right corner of the window.",
+      "target": [
+        1554,
+        300,
+        46,
+        36
+      ],
+      "action_type": "CLICK",
+      "coarse_cell": 76,
+      "coarse_point": [
+        1584,
+        315
+      ],
+      "point": [
+        1572,
+        326
+      ],
+      "hit": true,
+      "distance_px": 9.433981132056603,
+      "calls": 2,
+      "cost_usd": 0.0067992,
+      "error": null
+    },
+    {
+      "name": "icon_bottom_row",
+      "kind": "small",
+      "goal": "Click the green square icon in the row of icons.",
+      "target": [
+        734,
+        960,
+        24,
+        24
+      ],
+      "action_type": "CLICK",
+      "coarse_cell": 207,
+      "coarse_point": [
+        720,
+        945
+      ],
+      "point": [
+        756,
+        979
+      ],
+      "hit": true,
+      "distance_px": 12.206555615733702,
+      "calls": 2,
+      "cost_usd": 0.0080132,
+      "error": null
+    },
+    {
+      "name": "edge_dialog_ok_left",
+      "kind": "edge",
+      "goal": "Click the blue 'OK' button of the dialog.",
+      "target": [
+        500,
+        720,
+        120,
+        44
+      ],
+      "action_type": "CLICK",
+      "coarse_cell": 165,
+      "coarse_point": [
+        528,
+        765
+      ],
+      "point": [
+        540,
+        754
+      ],
+      "hit": true,
+      "distance_px": 23.323807579381203,
+      "calls": 2,
+      "cost_usd": 0.0075392,
+      "error": null
+    },
+    {
+      "name": "edge_dialog_replace",
+      "kind": "edge",
+      "goal": "Click the red 'Replace' button of the warning dialog.",
+      "target": [
+        1060,
+        638,
+        130,
+        40
+      ],
+      "action_type": "CLICK",
+      "coarse_cell": 151,
+      "coarse_point": [
+        1104,
+        675
+      ],
+      "point": [
+        1116,
+        664
+      ],
+      "hit": true,
+      "distance_px": 10.816653826391969,
+      "calls": 2,
+      "cost_usd": 0.006833199999999999,
+      "error": null
+    },
+    {
+      "name": "edge_start_button",
+      "kind": "edge",
+      "goal": "Click the blue start button at the left end of the taskbar.",
+      "target": [
+        6,
+        1044,
+        36,
+        32
+      ],
+      "action_type": "CLICK",
+      "coarse_cell": 220,
+      "coarse_point": [
+        48,
+        1035
+      ],
+      "point": [
+        27,
+        1054
+      ],
+      "hit": true,
+      "distance_px": 6.708203932499369,
+      "calls": 2,
+      "cost_usd": 0.0058692,
+      "error": null
+    },
+    {
+      "name": "edge_tab_settings",
+      "kind": "edge",
+      "goal": "Click the 'Settings' tab at the top of the window.",
+      "target": [
+        458,
+        190,
+        144,
+        34
+      ],
+      "action_type": "CLICK",
+      "coarse_cell": 45,
+      "coarse_point": [
+        528,
+        225
+      ],
+      "point": [
+        540,
+        214
+      ],
+      "hit": true,
+      "distance_px": 12.206555615733702,
+      "calls": 2,
+      "cost_usd": 0.0072292,
+      "error": null
+    }
+  ]
+}

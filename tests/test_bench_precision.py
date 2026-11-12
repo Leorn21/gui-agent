@@ -160,7 +160,7 @@ def test_run_scene_hits_with_a_good_planner(save_scene, by_goal):
     assert result.calls == 2
     assert result.distance_px < 25
     assert result.cost_usd == pytest.approx(estimate_cost(planner.usage, MODEL))
-    assert result.action_type == "click"
+    assert result.action_type == "CLICK"
     assert result.error is None
 
 
@@ -185,7 +185,7 @@ def test_run_scene_non_click_action_is_a_miss(scenes):
     assert not result.hit
     assert result.point is None and result.distance_px is None
     assert result.calls == 1
-    assert result.action_type == "finish"
+    assert result.action_type == "FINISH"
 
 
 def test_run_scene_records_errors_instead_of_raising(scenes):

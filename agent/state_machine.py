@@ -16,7 +16,7 @@ from __future__ import annotations
 import math
 import time
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from enum import StrEnum
 from pathlib import Path
 from typing import Any, Protocol
@@ -50,6 +50,15 @@ PRICES = {
 
 _CLICKS = (ActionType.CLICK, ActionType.DOUBLE_CLICK, ActionType.RIGHT_CLICK)
 
+# Wall-clock stages of one step, in seconds. "record" and "total" are only
+# known after the step's line is written, so the recorder gets the others.
+STAGES = ("capture", "tag", "decide", "refine", "act", "wait", "record", "total")
+_BEFORE_RECORD = STAGES[:6]
+
+
+def _empty_timings() -> dict[str, float]:
+    return dict.fromkeys(STAGES, 0.0)
+
 
 class RunStatus(StrEnum):
     """How a run ended."""
@@ -73,6 +82,9 @@ class StepEvent:
         screen_changed: Whether the screen visibly changed afterwards.
         changed_area: ``(x, y, width, height)`` of the change, or ``None``.
         cost_usd: Estimated API cost of the run so far.
+        timings: Seconds spent in each stage of the step, keyed by
+            ``STAGES``. The frame reused from the previous wait costs no
+            capture time; a step without zoom has no refine time.
     """
 
     number: int
@@ -82,6 +94,7 @@ class StepEvent:
     screen_changed: bool
     changed_area: tuple[int, int, int, int] | None
     cost_usd: float
+    timings: dict[str, float] = field(default_factory=_empty_timings)
 
 
 @dataclass(frozen=True)
@@ -127,6 +140,12 @@ def _round_half_up(value: float) -> int:
     return math.floor(value + 0.5)
 
 
+def _complete(timings: dict[str, float]) -> dict[str, float]:
+    """``timings`` with every stage present, missing ones at 0 seconds."""
+
+    return {stage: timings.get(stage, 0.0) for stage in STAGES}
+
+
 class AgentStateMachine:
     """Runs a goal to completion with a planner, a screen and a controller."""
 
@@ -146,6 +165,7 @@ class AgentStateMachine:
         zoom_margin: float = DEFAULT_ZOOM_MARGIN,
         on_step: Callable[[StepEvent], None] | None = None,
         sleep: Callable[[float], None] = time.sleep,
+        clock: Callable[[], float] = time.monotonic,
     ) -> None:
         """
         Args:
@@ -166,6 +186,8 @@ class AgentStateMachine:
                 side of the zoom, in ``(0, 2]``. 0.5 captures 2x2 cells.
             on_step: Called after every executed step.
             sleep: Injection point for tests.
+            clock: Monotonic time source for the stage timings (tests inject
+                a fake one).
 
         Raises:
             ValueError: On out-of-range settings.
@@ -196,6 +218,7 @@ class AgentStateMachine:
         self._zoom_margin = zoom_margin
         self._on_step = on_step
         self._sleep = sleep
+        self._clock = clock
 
     def run(self, goal: str) -> RunResult:
         """Work on ``goal`` until it finishes, fails, aborts or hits a limit."""
@@ -209,27 +232,44 @@ class AgentStateMachine:
 
         try:
             while status is None:
+                timings: dict[str, float] = {}
+                step_started = self._clock()
                 try:
                     self._safety.check()
                     if frame is None:
-                        frame = self._screen.capture()
-                    tagged = self._tagger.apply_labeled_grid(frame)
-                    action = self._planner.decide(goal, tagged, history)
+                        frame = self._timed(timings, "capture", self._screen.capture)
+                    tagged = self._timed(
+                        timings, "tag", self._tagger.apply_labeled_grid, frame
+                    )
+                    action = self._timed(
+                        timings,
+                        "decide",
+                        self._planner.decide,
+                        goal,
+                        tagged,
+                        history,
+                    )
                     if action.action_type is ActionType.FINISH:
                         status, reason = RunStatus.FINISHED, action.thought
                         break
                     if action.action_type is ActionType.FAIL:
                         status, reason = RunStatus.FAILED, action.thought
                         break
-                    point, end_point = self._locate(goal, action, tagged)
+                    point, end_point = self._locate(goal, action, tagged, timings)
                     self._safety.check()
-                    self._execute(action, point, end_point)
+                    self._timed(timings, "act", self._execute, action, point, end_point)
                 except PausedError:
                     self._safety.wait_while_paused()  # raises if aborted meanwhile
                     frame = None  # the screen may have changed: perceive again
                     continue
 
-                diff, frame = self._differ.wait_for_change(frame, self._screen.capture)
+                diff, frame = self._timed(
+                    timings,
+                    "wait",
+                    self._differ.wait_for_change,
+                    frame,
+                    self._screen.capture,
+                )
                 area = diff.bounds
                 record = StepRecord(
                     action,
@@ -250,11 +290,16 @@ class AgentStateMachine:
                     screen_changed=diff.changed,
                     changed_area=record.changed_area,
                     cost_usd=self._cost(),
+                    timings={s: timings.get(s, 0.0) for s in _BEFORE_RECORD},
                 )
                 if self._recorder:
+                    started = self._clock()
                     self._recorder.record_step(
                         event, self._annotate(tagged, point, end_point)
                     )
+                    timings["record"] = self._clock() - started
+                timings["total"] = self._clock() - step_started
+                event = replace(event, timings=dict(_complete(timings)))
                 if self._on_step:
                     self._on_step(event)
 
@@ -281,18 +326,22 @@ class AgentStateMachine:
     # ----------------------------------------------------------------- steps
 
     def _locate(
-        self, goal: str, action: AgentAction, tagged: TaggedFrame
+        self,
+        goal: str,
+        action: AgentAction,
+        tagged: TaggedFrame,
+        timings: dict[str, float],
     ) -> tuple[tuple[int, int] | None, tuple[int, int] | None]:
         """Screen point(s) the action targets, refined with the zoom."""
 
         kind = action.action_type
         if kind in _CLICKS or kind is ActionType.SCROLL:
             return self._point(
-                goal, action, tagged, action.target_id, action.coordinate
+                goal, action, tagged, action.target_id, action.coordinate, timings
             ), None
         if kind is ActionType.DRAG:
             start = self._point(
-                goal, action, tagged, action.target_id, action.coordinate
+                goal, action, tagged, action.target_id, action.coordinate, timings
             )
             end = self._point(
                 goal,
@@ -300,6 +349,7 @@ class AgentStateMachine:
                 tagged,
                 action.drag_end_target_id,
                 action.drag_end_coordinate,
+                timings,
                 drag_end=True,
             )
             return start, end
@@ -312,16 +362,19 @@ class AgentStateMachine:
         tagged: TaggedFrame,
         cell: int | None,
         coordinate: Any,
+        timings: dict[str, float],
         drag_end: bool = False,
     ) -> tuple[int, int]:
         if cell is None:  # coordinates in image pixels (not produced by the planner)
             return tagged.frame.to_screen(coordinate.x, coordinate.y)
 
+        started = self._clock()
         zoom = self._zoom_region(tagged, cell)
         zoom_tagged = self._tagger.apply_labeled_grid(
             zoom, grid_cols=self._zoom_grid, grid_rows=self._zoom_grid
         )
         fine = self._planner.refine(goal, action, zoom_tagged, drag_end=drag_end)
+        timings["refine"] = timings.get("refine", 0.0) + self._clock() - started
         if fine is None:
             return tagged.cell_to_screen(cell)
         return zoom_tagged.cell_to_screen(fine)
@@ -378,6 +431,21 @@ class AgentStateMachine:
 
     # --------------------------------------------------------------- helpers
 
+    def _timed(
+        self,
+        timings: dict[str, float],
+        stage: str,
+        fn: Callable[..., Any],
+        *args: Any,
+    ) -> Any:
+        """Call ``fn`` and add its wall-clock time to ``timings[stage]``."""
+
+        started = self._clock()
+        try:
+            return fn(*args)
+        finally:
+            timings[stage] = timings.get(stage, 0.0) + self._clock() - started
+
     def _cost(self) -> float:
         return estimate_cost(self._planner.usage, self._planner.model)
 
@@ -411,6 +479,7 @@ __all__ = [
     "AgentStateMachine",
     "RunResult",
     "RunStatus",
+    "STAGES",
     "StepEvent",
     "estimate_cost",
 ]

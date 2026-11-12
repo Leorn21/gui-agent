@@ -374,6 +374,49 @@ def test_abort_during_drag_releases_the_button(make, parts):
     assert events[-1][:2] == ("release", mouse.Button.left)
 
 
+# With zero durations nothing sleeps, so the switch must still be checked on
+# every jump, character and drag, or a pause could not cut anything.
+
+
+def test_zero_duration_jump_is_cut_by_pause(make, parts):
+    with pytest.raises(PausedError):
+        make(move_duration=0, safety=FakeSafety(fail_after=0)).click(500, 300)
+
+    assert parts["mouse"].positions == []
+    assert parts["mouse"].events == []
+
+
+def test_zero_duration_jump_is_checked_before_moving(make, parts):
+    safety = FakeSafety()
+    make(move_duration=0, safety=safety).click(500, 300)
+
+    assert safety.calls >= 2  # before the jump and before the click
+    assert parts["mouse"].positions == [(500, 300)]
+
+
+def test_zero_type_interval_still_checks_between_characters(make, parts):
+    with pytest.raises(PausedError):
+        make(type_interval=0, safety=FakeSafety(fail_after=3)).type_text("abcdef")
+
+    assert typed(parts["keyboard"]) == "abc"
+    assert parts["sleeps"] == [0, 0, 0]
+
+
+def test_zero_duration_drag_abort_releases_the_button(make, parts):
+    # Both durations zero: the start jump, the press and the end jump each
+    # check first; the abort lands on the end jump, with the button held.
+    with pytest.raises(InterruptedError):
+        make(
+            move_duration=0, safety=FakeSafety(fail_after=2, error=InterruptedError)
+        ).drag(100, 100, 400, 250, duration=0)
+
+    assert parts["mouse"].events == [
+        ("press", mouse.Button.left, (100, 100)),
+        ("release", mouse.Button.left, (100, 100)),
+    ]
+    assert parts["mouse"].positions == [(100, 100)]
+
+
 def test_interrupted_combo_releases_held_keys(make, parts):
     class FailingKeyboard(FakeKeyboard):
         def press(self, key):

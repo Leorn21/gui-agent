@@ -12,6 +12,7 @@ status.
 from __future__ import annotations
 
 import argparse
+import math
 import os
 import sys
 from collections.abc import Callable, Mapping, Sequence
@@ -20,6 +21,7 @@ from typing import Any
 
 from agent.prompts import describe_action
 from agent.state_machine import RunResult, RunStatus, StepEvent
+from controller.os_controller import DEFAULT_MOVE_DURATION, DEFAULT_TYPE_INTERVAL
 from controller.safety import (
     DEFAULT_PAUSE_HOTKEY,
     DEFAULT_RESUME_HOTKEY,
@@ -43,15 +45,30 @@ class Settings:
     pause_hotkey: str
     resume_hotkey: str
     zoom_margin: float
+    move_duration: float
+    type_interval: float
     has_api_key: bool
+
+
+def _seconds(env: Mapping[str, str], name: str, default: float) -> float:
+    raw = env.get(name, "") or str(default)
+    try:
+        value = float(raw)
+    except ValueError:
+        raise ValueError(f"{name} must be a number of seconds, got {raw}") from None
+    if not math.isfinite(value) or value < 0:
+        raise ValueError(f"{name} must be zero or positive, got {raw}")
+    return value
 
 
 def load_settings(env: Mapping[str, str]) -> Settings:
     """Read settings from an environment mapping.
 
     Raises:
-        ValueError: If ``GUI_AGENT_MAX_STEPS`` is not a positive integer or
-            ``GUI_AGENT_ZOOM_MARGIN`` is not a number in ``(0, 2]``.
+        ValueError: If ``GUI_AGENT_MAX_STEPS`` is not a positive integer,
+            ``GUI_AGENT_ZOOM_MARGIN`` is not a number in ``(0, 2]``, or
+            ``GUI_AGENT_MOVE_DURATION`` / ``GUI_AGENT_TYPE_INTERVAL`` is not a
+            number of seconds zero or above.
     """
 
     raw_steps = env.get("GUI_AGENT_MAX_STEPS", "") or str(DEFAULT_MAX_STEPS)
@@ -69,6 +86,8 @@ def load_settings(env: Mapping[str, str]) -> Settings:
         pause_hotkey=env.get("GUI_AGENT_SAFETY_HOTKEY") or DEFAULT_PAUSE_HOTKEY,
         resume_hotkey=env.get("GUI_AGENT_RESUME_HOTKEY") or DEFAULT_RESUME_HOTKEY,
         zoom_margin=zoom_margin,
+        move_duration=_seconds(env, "GUI_AGENT_MOVE_DURATION", DEFAULT_MOVE_DURATION),
+        type_interval=_seconds(env, "GUI_AGENT_TYPE_INTERVAL", DEFAULT_TYPE_INTERVAL),
         has_api_key=bool(env.get("ANTHROPIC_API_KEY", "").strip()),
     )
 
@@ -184,7 +203,10 @@ class _Session:
             on_state_change=on_safety,
         )
         controller: Any = OSController(
-            safety=safety, reserved_hotkeys=(s.pause_hotkey, s.resume_hotkey)
+            safety=safety,
+            reserved_hotkeys=(s.pause_hotkey, s.resume_hotkey),
+            move_duration=s.move_duration,
+            type_interval=s.type_interval,
         )
         with ScreenCapture() as capture, safety:
             screen: Any = capture

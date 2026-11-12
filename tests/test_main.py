@@ -72,6 +72,67 @@ def test_settings_never_expose_the_key():
     assert "test-key-not-real" not in repr(main.load_settings(KEY_ENV))
 
 
+def test_speed_defaults_match_the_controller():
+    s = main.load_settings(KEY_ENV)
+
+    assert s.move_duration == 0.2
+    assert s.type_interval == 0.02
+
+
+def test_speed_settings_from_env_zero_is_valid():
+    s = main.load_settings(
+        {**KEY_ENV, "GUI_AGENT_MOVE_DURATION": "0", "GUI_AGENT_TYPE_INTERVAL": "0"}
+    )
+
+    assert (s.move_duration, s.type_interval) == (0.0, 0.0)
+
+
+def test_speed_settings_from_env_fractions():
+    s = main.load_settings(
+        {**KEY_ENV, "GUI_AGENT_MOVE_DURATION": "0.5", "GUI_AGENT_TYPE_INTERVAL": "0.1"}
+    )
+
+    assert (s.move_duration, s.type_interval) == (0.5, 0.1)
+
+
+@pytest.mark.parametrize(
+    ("name", "value"),
+    [
+        ("GUI_AGENT_MOVE_DURATION", "abc"),
+        ("GUI_AGENT_MOVE_DURATION", "-0.1"),
+        ("GUI_AGENT_MOVE_DURATION", "nan"),
+        ("GUI_AGENT_TYPE_INTERVAL", "abc"),
+        ("GUI_AGENT_TYPE_INTERVAL", "-1"),
+    ],
+)
+def test_invalid_speed_settings_raise(name, value):
+    with pytest.raises(ValueError):
+        main.load_settings({**KEY_ENV, name: value})
+
+
+def test_session_passes_the_speed_settings_to_the_controller(monkeypatch):
+    import controller.os_controller as os_controller
+
+    class Stop(Exception):
+        pass
+
+    seen = {}
+
+    def fake_controller(**kwargs):
+        seen.update(kwargs)
+        raise Stop  # stop before any screen, hook or API is touched
+
+    monkeypatch.setattr(os_controller, "OSController", fake_controller)
+    settings = main.load_settings(
+        {**KEY_ENV, "GUI_AGENT_MOVE_DURATION": "0", "GUI_AGENT_TYPE_INTERVAL": "0.05"}
+    )
+
+    with pytest.raises(Stop):
+        main._Session(settings, lambda event: None).run("goal")
+    assert seen["move_duration"] == 0.0
+    assert seen["type_interval"] == 0.05
+
+
 # ----------------------------------------------------------------- arguments
 
 

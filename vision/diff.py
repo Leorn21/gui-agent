@@ -23,6 +23,21 @@ DEFAULT_MIN_PIXELS = 50  # changed pixels a region needs (a caret ~34, a letter 
 MERGE_RADIUS = 4  # px; changes closer than ~2x this merge into one region
 DEFAULT_TIMEOUT = 2.0
 DEFAULT_INTERVAL = 0.1
+POLL_INTERVAL = 0.03  # seconds between captures when an action may change the screen
+
+# (timeout, interval) per action type, keyed by the AgentAction type strings.
+# Plain strings on purpose: vision/ must not import agent code. Keys and typing
+# rarely open anything, so a short cap is enough; a click may launch a program.
+_WAIT_PROFILES: dict[str, tuple[float, float]] = {
+    "CLICK": (3.0, POLL_INTERVAL),
+    "DOUBLE_CLICK": (3.0, POLL_INTERVAL),
+    "RIGHT_CLICK": (1.0, POLL_INTERVAL),
+    "DRAG": (1.0, POLL_INTERVAL),
+    "TYPE": (0.5, POLL_INTERVAL),
+    "PRESS_KEY": (0.5, POLL_INTERVAL),
+    "SCROLL": (0.5, POLL_INTERVAL),
+    "WAIT": (0.5, POLL_INTERVAL),
+}
 
 
 @dataclass(frozen=True)
@@ -53,6 +68,24 @@ class DiffResult:
 
 
 _UNCHANGED = DiffResult(changed=False, changed_ratio=0.0, regions=(), bounds=None)
+
+
+def wait_profile(action_type: str) -> dict[str, float]:
+    """Wait settings for ``FrameDiff.wait_for_change`` after an action.
+
+    Args:
+        action_type: The action's type string, such as ``"PRESS_KEY"``.
+            Unknown types get the ``wait_for_change`` defaults.
+
+    Returns:
+        A new dict with ``timeout`` and ``interval`` keys, so it can be passed
+        as ``wait_for_change(before, capture, **wait_profile(action_type))``.
+    """
+
+    timeout, interval = _WAIT_PROFILES.get(
+        action_type, (DEFAULT_TIMEOUT, DEFAULT_INTERVAL)
+    )
+    return {"timeout": timeout, "interval": interval}
 
 
 def _round_half_up(value: float) -> int:
@@ -218,7 +251,9 @@ __all__ = [
     "DEFAULT_MIN_PIXELS",
     "DEFAULT_TIMEOUT",
     "PIXEL_THRESHOLD",
+    "POLL_INTERVAL",
     "DiffResult",
     "FrameDiff",
     "Region",
+    "wait_profile",
 ]

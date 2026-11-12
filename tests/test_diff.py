@@ -14,11 +14,15 @@ import pytest
 
 from vision.capture import Frame
 from vision.diff import (
+    DEFAULT_INTERVAL,
     DEFAULT_MIN_PIXELS,
+    DEFAULT_TIMEOUT,
     PIXEL_THRESHOLD,
+    POLL_INTERVAL,
     DiffResult,
     FrameDiff,
     Region,
+    wait_profile,
 )
 
 W, H = 400, 300
@@ -270,3 +274,76 @@ def test_defaults_poll_every_100_ms_for_2_seconds():
 def test_invalid_wait_settings_raise(kwargs):
     with pytest.raises(ValueError):
         wait(scripted([frame()]), **kwargs)
+
+
+# ------------------------------------------------------------- wait_profile
+
+ACTION_TYPES = (
+    "CLICK",
+    "DOUBLE_CLICK",
+    "RIGHT_CLICK",
+    "TYPE",
+    "PRESS_KEY",
+    "DRAG",
+    "SCROLL",
+    "WAIT",
+)
+
+
+def test_poll_interval_is_30_ms():
+    assert POLL_INTERVAL == pytest.approx(0.03)
+
+
+@pytest.mark.parametrize("action_type", ACTION_TYPES)
+def test_every_action_type_has_a_profile_polling_every_30_ms(action_type):
+    profile = wait_profile(action_type)
+
+    assert profile["interval"] == pytest.approx(POLL_INTERVAL)
+    assert 0 < profile["timeout"] <= 3.0
+
+
+@pytest.mark.parametrize("action_type", ["PRESS_KEY", "TYPE", "SCROLL"])
+def test_keys_typing_and_scroll_have_short_caps(action_type):
+    assert wait_profile(action_type)["timeout"] <= 1.0
+
+
+@pytest.mark.parametrize("action_type", ["CLICK", "DOUBLE_CLICK"])
+def test_clicks_allow_longer_waits_for_programs_to_open(action_type):
+    assert wait_profile(action_type)["timeout"] > wait_profile("PRESS_KEY")["timeout"]
+
+
+def test_unknown_action_type_gets_the_default_settings():
+    assert wait_profile("NOT_AN_ACTION") == {
+        "timeout": DEFAULT_TIMEOUT,
+        "interval": DEFAULT_INTERVAL,
+    }
+
+
+def test_profile_is_a_fresh_dict_each_call():
+    profile = wait_profile("CLICK")
+    profile["timeout"] = 99.0
+
+    assert wait_profile("CLICK")["timeout"] != 99.0
+
+
+def test_profile_keys_are_wait_for_change_arguments():
+    capture = scripted([frame()])
+    result, _, _ = wait(capture, **wait_profile("PRESS_KEY"))
+
+    assert result.changed is False
+
+
+def test_key_press_without_change_waits_well_under_2_seconds():
+    capture = scripted([frame()])
+    _, _, clock = wait(capture, **wait_profile("PRESS_KEY"))
+
+    assert clock.now < 1.0
+    assert clock.now < DEFAULT_TIMEOUT
+
+
+def test_key_press_polls_every_30_ms():
+    capture = scripted([frame()])
+    _, _, clock = wait(capture, **wait_profile("PRESS_KEY"))
+
+    assert clock.sleeps
+    assert clock.sleeps == pytest.approx([POLL_INTERVAL] * len(clock.sleeps))

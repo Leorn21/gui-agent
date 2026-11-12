@@ -147,7 +147,7 @@ def run_scene(scene: Scene, planner: Any) -> SceneResult:
             coarse_cell = action.target_id
             if coarse_cell is not None:
                 coarse_point = tagged.cell_to_screen(coarse_cell)
-            point, _ = machine._locate(scene.goal, action, tagged)
+            point, _ = machine._locate(scene.goal, action, tagged, timings={})
     except Exception as exc:  # a failed call must not abort the whole bench
         error = f"{type(exc).__name__}: {exc}"
 

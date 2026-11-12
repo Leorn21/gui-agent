@@ -22,6 +22,7 @@ from controller.safety import PausedError
 from schemas.actions import ActionType, AgentAction
 from tests import scenes
 from vision.diff import DiffResult, Region
+from vision.som_tagger import VisualTagger
 
 # ------------------------------------------------------------------- fakes
 
@@ -563,3 +564,204 @@ def test_recorder_never_deletes_unrelated_folders(tmp_path):
     RunRecorder(base_dir=tmp_path, keep=2).start("goal")
 
     assert (tmp_path / "notes").exists()
+
+
+# ------------------------------------------------------------ stage timings
+
+
+class FakeClock:
+    """Monotonic clock that only moves when a fake stage 'takes' time."""
+
+    def __init__(self):
+        self.now = 0.0
+
+    def __call__(self):
+        return self.now
+
+    def advance(self, seconds):
+        self.now += seconds
+
+
+class TimedScreen(FakeScreen):
+    def __init__(self, clock, capture_cost=0.2, region_cost=0.1):
+        super().__init__()
+        self.clock = clock
+        self.capture_cost = capture_cost
+        self.region_cost = region_cost
+
+    def capture(self):
+        self.clock.advance(self.capture_cost)
+        return super().capture()
+
+    def capture_region(self, x, y, width, height):
+        self.clock.advance(self.region_cost)
+        return super().capture_region(x, y, width, height)
+
+
+class TimedPlanner(FakePlanner):
+    def __init__(self, clock, actions, cells=()):
+        super().__init__(actions, cells)
+        self.clock = clock
+
+    def decide(self, goal, tagged, history=()):
+        self.clock.advance(1.5)
+        return super().decide(goal, tagged, history)
+
+    def refine(self, goal, action, zoom_tagged, drag_end=False):
+        self.clock.advance(1.0)
+        return super().refine(goal, action, zoom_tagged, drag_end)
+
+
+class TimedController(FakeController):
+    def __init__(self, clock):
+        super().__init__()
+        self.clock = clock
+
+    def _record(self, *call):
+        self.clock.advance(0.3)
+        super()._record(*call)
+
+
+class TimedDiffer(FakeDiffer):
+    def __init__(self, clock):
+        super().__init__()
+        self.clock = clock
+
+    def wait_for_change(self, before, capture):
+        self.clock.advance(0.4)
+        return super().wait_for_change(before, capture)
+
+
+class TimedTagger(VisualTagger):
+    def __init__(self, clock):
+        super().__init__()
+        self.clock = clock
+
+    def apply_labeled_grid(self, frame, **kwargs):
+        self.clock.advance(0.05)
+        return super().apply_labeled_grid(frame, **kwargs)
+
+
+class TimedRecorder:
+    def __init__(self, clock):
+        self.clock = clock
+        self.events = []
+
+    def start(self, goal):
+        return None
+
+    def record_step(self, event, image):
+        self.clock.advance(0.1)
+        self.events.append(event)
+
+    def finish(self, result):
+        pass
+
+
+# Stage costs (seconds) used below: capture 0.2, tag 0.05, decide 1.5,
+# region capture 0.1, refine 1.0, act 0.3, wait 0.4, record 0.1.
+def timed_run(actions, cells=(), with_recorder=False):
+    clock = FakeClock()
+    recorder = TimedRecorder(clock) if with_recorder else None
+    events = []
+    machine = AgentStateMachine(
+        planner=TimedPlanner(clock, actions, cells),
+        controller=TimedController(clock),
+        screen=TimedScreen(clock),
+        safety=FakeSafety(),
+        differ=TimedDiffer(clock),
+        tagger=TimedTagger(clock),
+        recorder=recorder,
+        clock=clock,
+        sleep=clock.advance,
+        on_step=events.append,
+    )
+    result = machine.run("Guardá el archivo")
+    return result, events, recorder
+
+
+def test_step_event_has_every_stage_with_zero_default():
+    event = StepEvent(
+        number=1,
+        action=act(ActionType.FAIL),
+        point=None,
+        end_point=None,
+        screen_changed=False,
+        changed_area=None,
+        cost_usd=0.0,
+    )
+
+    assert event.timings == {
+        "capture": 0.0,
+        "tag": 0.0,
+        "decide": 0.0,
+        "refine": 0.0,
+        "act": 0.0,
+        "wait": 0.0,
+        "record": 0.0,
+        "total": 0.0,
+    }
+
+
+def test_click_step_reports_seconds_per_stage():
+    _, events, _ = timed_run([act(ActionType.CLICK, target_id=24), FINISH], [19])
+
+    timings = events[0].timings
+    assert timings["capture"] == pytest.approx(0.2)
+    assert timings["tag"] == pytest.approx(0.05)
+    assert timings["decide"] == pytest.approx(1.5)
+    # Zoom: region capture 0.1 + zoom tagging 0.05 + refine 1.0.
+    assert timings["refine"] == pytest.approx(1.15)
+    assert timings["act"] == pytest.approx(0.3)
+    # The differ's own polling captures (0.2) count as wait, not capture.
+    assert timings["wait"] == pytest.approx(0.4 + 0.2)
+    assert timings["record"] == 0.0  # no recorder
+    assert timings["total"] == pytest.approx(0.2 + 0.05 + 1.5 + 1.15 + 0.3 + 0.6)
+
+
+def test_keyboard_step_has_no_refine_time():
+    _, events, _ = timed_run([act(ActionType.TYPE, text="hola"), FINISH])
+
+    assert events[0].timings["refine"] == 0.0
+
+
+def test_total_includes_the_recording_stage():
+    _, events, recorder = timed_run(
+        [act(ActionType.TYPE, text="hola"), FINISH], with_recorder=True
+    )
+
+    timings = events[0].timings
+    assert timings["record"] == pytest.approx(0.1)
+    assert timings["total"] == pytest.approx(0.2 + 0.05 + 1.5 + 0.3 + 0.6 + 0.1)
+    assert len(recorder.events) == 1
+
+
+def test_recorder_gets_the_stage_timings_of_its_step():
+    _, _, recorder = timed_run(
+        [act(ActionType.TYPE, text="hola"), FINISH], with_recorder=True
+    )
+
+    assert recorder.events[0].timings["decide"] == pytest.approx(1.5)
+
+
+def test_capture_is_zero_when_the_previous_wait_frame_is_reused():
+    _, events, _ = timed_run(
+        [act(ActionType.TYPE, text="a"), act(ActionType.TYPE, text="b"), FINISH]
+    )
+
+    assert events[0].timings["capture"] == pytest.approx(0.2)
+    assert events[1].timings["capture"] == 0.0
+
+
+def test_drag_adds_the_refine_time_of_both_ends():
+    drag = act(ActionType.DRAG, target_id=24, drag_end_target_id=24, duration=0.8)
+    _, events, _ = timed_run([drag, FINISH], [19, 20])
+
+    assert events[0].timings["refine"] == pytest.approx(2 * 1.15)
+
+
+def test_wait_sleep_is_counted_as_act():
+    _, events, _ = timed_run([act(ActionType.WAIT, duration=2.0), FINISH])
+
+    assert events[0].timings["act"] == pytest.approx(2.0)
+    assert events[0].timings["refine"] == 0.0

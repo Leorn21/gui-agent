@@ -57,6 +57,7 @@ class RunRecorder:
         self._clock = clock
         self.run_dir: Path | None = None
         self._goal = ""
+        self._timings: list[dict[str, float]] = []
 
     def start(self, goal: str) -> Path:
         """Create the folder for a new run, removing the oldest ones."""
@@ -78,6 +79,7 @@ class RunRecorder:
 
         self.run_dir = run_dir
         self._goal = goal
+        self._timings = []
         return run_dir
 
     def record_step(self, event: StepEvent, image: NDArray[np.uint8]) -> None:
@@ -93,12 +95,14 @@ class RunRecorder:
             "screen_changed": event.screen_changed,
             "changed_area": event.changed_area,
             "cost_usd": event.cost_usd,
+            "timings": event.timings,
         }
         with open(run_dir / "steps.jsonl", "a", encoding="utf-8") as fh:
             fh.write(json.dumps(line, ensure_ascii=False) + "\n")
+        self._timings.append(dict(event.timings))
 
     def finish(self, result: RunResult) -> None:
-        """Write ``summary.json`` for the run."""
+        """Write ``summary.json`` for the run, with per-stage totals and averages."""
 
         run_dir = self._require_run()
         summary = {
@@ -107,6 +111,7 @@ class RunRecorder:
             "reason": result.reason,
             "steps": len(result.steps),
             "cost_usd": result.cost_usd,
+            "timings": _summarize_timings(self._timings),
         }
         (run_dir / "summary.json").write_text(
             json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8"
@@ -116,6 +121,23 @@ class RunRecorder:
         if self.run_dir is None:
             raise RuntimeError("Call start() before recording")
         return self.run_dir
+
+
+def _summarize_timings(samples: list[dict[str, float]]) -> dict[str, dict[str, float]]:
+    """Sum and mean of each stage over the recorded steps, in seconds."""
+
+    totals: dict[str, float] = {}
+    for timings in samples:
+        for stage, seconds in timings.items():
+            totals[stage] = totals.get(stage, 0.0) + seconds
+    count = len(samples)
+    averages = (
+        {stage: total / count for stage, total in totals.items()} if count else {}
+    )
+    return {
+        "totals": {stage: round(v, 3) for stage, v in totals.items()},
+        "averages": {stage: round(v, 3) for stage, v in averages.items()},
+    }
 
 
 __all__ = ["DEFAULT_BASE_DIR", "DEFAULT_KEEP", "RunRecorder"]

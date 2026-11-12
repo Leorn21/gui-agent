@@ -220,6 +220,31 @@ def test_step_line_has_number_action_point_change_cost_and_thought():
         assert part in text
 
 
+def test_step_text_shows_the_stage_breakdown_in_seconds():
+    action = AgentAction(
+        thought="Abro el menú", action_type=ActionType.CLICK, target_id=230
+    )
+    timings = dict.fromkeys(
+        ("capture", "tag", "decide", "refine", "act", "wait", "record", "total"), 0.0
+    )
+    timings.update(decide=1.82, refine=1.10, wait=0.40, total=3.6)
+    event = StepEvent(
+        number=1,
+        action=action,
+        point=(24, 1060),
+        end_point=None,
+        screen_changed=True,
+        changed_area=None,
+        cost_usd=0.0012,
+        timings=timings,
+    )
+    lines = main.format_step(event).splitlines()
+
+    assert lines[-1] == (
+        "    tiempos: decide 1.82s · refine 1.10s · espera 0.40s · total 3.60s"
+    )
+
+
 def test_result_line_has_status_reason_steps_cost_and_folder(tmp_path):
     res = RunResult(
         status=RunStatus.FINISHED,

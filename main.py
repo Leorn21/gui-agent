@@ -95,13 +95,37 @@ def exit_code(result: RunResult) -> int:
 # ------------------------------------------------------------- console texts
 
 
+_STAGE_NAMES = {
+    "capture": "captura",
+    "tag": "grilla",
+    "decide": "decide",
+    "refine": "refine",
+    "act": "acción",
+    "wait": "espera",
+    "record": "registro",
+}
+
+
 def format_step(event: StepEvent) -> str:
     where = "" if event.point is None else f" en {event.point}"
     change = "cambió la pantalla" if event.screen_changed else "sin cambio"
     return (
         f"[{event.number}] {describe_action(event.action)}{where} · {change} · "
-        f"US$ {event.cost_usd:.4f}\n    {event.action.thought}"
+        f"US$ {event.cost_usd:.4f}\n    {event.action.thought}\n"
+        f"    {_format_timings(event.timings)}"
     )
+
+
+def _format_timings(timings: Mapping[str, float]) -> str:
+    """The stages that took time in a step, in seconds, and its total."""
+
+    parts = [
+        f"{name} {timings[stage]:.2f}s"
+        for stage, name in _STAGE_NAMES.items()
+        if timings.get(stage)
+    ]
+    parts.append(f"total {timings.get('total', 0.0):.2f}s")
+    return "tiempos: " + " · ".join(parts)
 
 
 def format_result(result: RunResult) -> str:
